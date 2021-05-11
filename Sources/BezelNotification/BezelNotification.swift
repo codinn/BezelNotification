@@ -70,6 +70,8 @@ public class BezelNotification {
     
     public enum Location {
         case topRight
+        case center
+        case bottomCenter
     }
     
     public func show(relativeTo location: Location, of parentWindow: NSWindow) {
@@ -81,6 +83,7 @@ public class BezelNotification {
                 .convert(contentView.frame, to: nil))
         let notificationSize = self.window.frame.size
         let margin = CGFloat(20)
+        let notificationOrigin: CGPoint
 
         switch location {
         case .topRight:
@@ -89,10 +92,25 @@ public class BezelNotification {
             topRight.x -= margin
             topRight.y -= margin
             
-            let notificationOrigin = CGPoint(x: topRight.x - notificationSize.width,
+            notificationOrigin = CGPoint(x: topRight.x - notificationSize.width,
                                              y: topRight.y - notificationSize.height)
-            self.window.setFrameOrigin(notificationOrigin)
+        case .center:
+            let centerX = frame.origin.x + frame.size.width / 2
+            let centerY = frame.origin.y + frame.size.height / 2
+            let center = CGPoint(x: centerX, y: centerY)
+            
+            notificationOrigin = CGPoint(x: center.x - notificationSize.width / 2,
+                                             y: center.y - notificationSize.height / 2)
+            
+        case .bottomCenter:
+            let centerX = frame.origin.x + frame.size.width / 2
+            var bottomCenter = CGPoint(x: centerX, y: frame.origin.y)
+            
+            bottomCenter.y += margin
+            notificationOrigin = CGPoint(x: bottomCenter.x - notificationSize.width / 2,
+                                             y: bottomCenter.y + notificationSize.height)
         }
+        self.window.setFrameOrigin(notificationOrigin)
     }
     
     func _show() {

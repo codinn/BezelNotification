@@ -59,9 +59,9 @@ public class BezelNotification {
     
     /// Show the notification then return. The notification will automatically
     /// fade out after the given interval.
-    public func show() {
+    public func show(completion: (() -> Void)? = nil) {
         let alreadyVisible = self.isVisible
-        _show()
+        _show(completion: completion)
         
         if !alreadyVisible {
             window.center()
@@ -74,8 +74,8 @@ public class BezelNotification {
         case bottomCenter
     }
     
-    public func show(relativeTo location: Location, of parentWindow: NSWindow) {
-        _show()
+    public func show(relativeTo location: Location, of parentWindow: NSWindow, completion: (() -> Void)? = nil) {
+        _show(completion: completion)
         
         let contentView = parentWindow.contentView!
         let frame = parentWindow
@@ -113,14 +113,14 @@ public class BezelNotification {
         self.window.setFrameOrigin(notificationOrigin)
     }
     
-    func _show() {
+    func _show(completion: (() -> Void)?) {
         fadeOutTimer?.invalidate()
         fadeOutTimer = nil
         previousShowSession?.cancelled = true
         
         let newSession = NotificationSession(modal: false)
         self.previousShowSession = newSession
-        fadeIn(session: newSession)
+        fadeIn(session: newSession, completion: completion)
         
         window.makeKeyAndOrderFront(nil)
     }
@@ -128,12 +128,12 @@ public class BezelNotification {
     public func dismiss() {
         guard let session = self.previousShowSession, !session.cancelled else { return }
         session.cancelled = true
-        self.fadeOut(session: session)
+        self.fadeOut(session: session, completion: nil)
     }
     
     /// Show the notification, wait 3 seconds and fade out. Does not return until the fade out is over.
     public func runModal() {
-        fadeIn(session: NotificationSession(modal: true))
+        fadeIn(session: NotificationSession(modal: true), completion: nil)
         NSApp.runModal(for: window)
     }
     
@@ -181,7 +181,7 @@ public class BezelNotification {
     }
     
     var fadeOutTimer: Timer?
-    func fadeIn(session: NotificationSession) {
+    func fadeIn(session: NotificationSession, completion: (() -> Void)?) {
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = fadeInAnimationDuration
             window.animator().alphaValue = 1.0
@@ -193,7 +193,7 @@ public class BezelNotification {
                 guard !session.cancelled else {
                     return
                 }
-                self.fadeOut(session: session)
+                self.fadeOut(session: session, completion: completion)
             }
             
             // For modal run loop
@@ -202,7 +202,7 @@ public class BezelNotification {
         })
     }
     
-    func fadeOut(session: NotificationSession) {
+    func fadeOut(session: NotificationSession, completion: (() -> Void)?) {
         session.cancelled = true
         window.alphaValue = 1.0
         NSAnimationContext.runAnimationGroup({ context in
@@ -212,6 +212,7 @@ public class BezelNotification {
             if session.modal {
                 NSApp.stopModal()
             }
+            completion?()
         })
     }
 }
